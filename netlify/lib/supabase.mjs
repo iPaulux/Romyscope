@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
+import { env } from './env.mjs'
 
 // Client "admin" (clé service) : à n'utiliser que côté serveur
-export const admin = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+export const admin = createClient(env('VITE_SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), {
   auth: { persistSession: false }
 })
 

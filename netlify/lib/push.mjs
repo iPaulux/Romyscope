@@ -1,10 +1,11 @@
 import webpush from 'web-push'
 import { admin } from './supabase.mjs'
+import { env } from './env.mjs'
 
 webpush.setVapidDetails(
   process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
-  process.env.VITE_VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
+  env('VITE_VAPID_PUBLIC_KEY'),
+  env('VAPID_PRIVATE_KEY')
 )
 
 export async function sendToUser(userId, payload) {

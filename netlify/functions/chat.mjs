@@ -1,7 +1,8 @@
 import { GoogleGenAI, ApiError } from '@google/genai'
 import { getUser, json } from '../lib/supabase.mjs'
+import { env } from '../lib/env.mjs'
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+const ai = new GoogleGenAI({ apiKey: env('GEMINI_API_KEY') })
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash'
 
 // Offre gratuite de Gemini : Google peut réutiliser les conversations.

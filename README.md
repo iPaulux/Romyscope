@@ -22,7 +22,12 @@ Copie `.env.example` en `.env` pour le local (un `.env` avec des clés VAPID dé
 npm run vapid
 ```
 
-Sur **Netlify → Site configuration → Environment variables**, ajoute toutes les variables de `.env.example` :
+Sur **Netlify → Site configuration → Environment variables**, ajoute toutes les variables de `.env.example`.
+
+Scopes à choisir :
+- Clés secrètes (`GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `VAPID_PRIVATE_KEY`) : cocher « Contains secret values », scope **Functions** uniquement.
+- `VITE_SUPABASE_URL` et `VITE_VAPID_PUBLIC_KEY` : scopes **Builds et Functions**, car les fonctions les lisent aussi.
+- Autres `VITE_*` : scope **Builds** (elles sont intégrées au site, c'est normal qu'elles soient publiques).
 
 | Variable | Où la trouver |
 |---|---|
