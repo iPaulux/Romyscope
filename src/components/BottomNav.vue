@@ -34,9 +34,9 @@ const tabs = [
 }
 .tab {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  color: #BFAEBB; text-decoration: none; font-size: .72rem; font-weight: 700; border-radius: 16px;
+  color: #BBA6BE; text-decoration: none; font-size: .72rem; font-weight: 700; border-radius: 16px;
   transition: color .15s;
 }
-.tab.active { color: #D9668F; }
+.tab.active { color: var(--rose-ink); }
 .tab.active svg { transform: translateY(-1px); }
 </style>

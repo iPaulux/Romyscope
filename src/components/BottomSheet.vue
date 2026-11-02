@@ -30,7 +30,7 @@ const emit = defineEmits(['close'])
   background: var(--bg); border-radius: 28px 28px 0 0;
   padding: 10px 16px calc(24px + var(--safe-b));
 }
-.grab { width: 44px; height: 5px; border-radius: 9px; background: #E8D6DD; margin: 0 auto 10px; }
+.grab { width: 44px; height: 5px; border-radius: 9px; background: #EBD6EC; margin: 0 auto 10px; }
 .head { margin-bottom: 14px; }
 .body { display: flex; flex-direction: column; gap: 16px; }
 .sheet-enter-active, .sheet-leave-active { transition: opacity .25s; }

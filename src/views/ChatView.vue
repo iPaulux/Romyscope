@@ -70,7 +70,7 @@ onMounted(load)
 <template>
   <main class="chat">
     <header class="chat-head">
-      <div class="avatar">🌙</div>
+      <img class="avatar" src="/luna.png" alt="" width="46" height="46" />
       <div class="grow">
         <h2>Luna</h2>
         <p class="small muted">Ta confidente, toujours là pour toi</p>
@@ -80,7 +80,7 @@ onMounted(load)
 
     <div ref="scroller" class="messages">
       <div v-if="!messages.length" class="welcome">
-        <div class="big-emoji">🌙</div>
+        <img class="mascot" src="/luna.png" alt="Luna" width="110" height="109" />
         <p class="title">Coucou{{ store.settings?.first_name ? ` ${store.settings.first_name}` : '' }}, moi c'est Luna.</p>
         <p class="muted small">Tu peux me parler de tout : une envie de craquer, une journée difficile, une idée de repas, ou juste discuter. Ici, aucun jugement 💗</p>
       </div>
@@ -113,11 +113,12 @@ onMounted(load)
   padding: var(--safe-t) 0 calc(var(--nav-h) + var(--safe-b));
 }
 .chat-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
-.avatar { width: 46px; height: 46px; border-radius: 50%; background: var(--grad); display: grid; place-items: center; font-size: 1.4rem; }
+.avatar { width: 46px; height: 46px; object-fit: contain; }
 .grow { flex: 1; }
 .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .welcome { text-align: center; padding: 24px 12px; display: flex; flex-direction: column; gap: 8px; align-items: center; }
-.big-emoji { font-size: 3rem; }
+.mascot { animation: float 4s ease-in-out infinite; }
+@keyframes float { 50% { transform: translateY(-8px); } }
 .welcome .title { font-size: 1.2rem; }
 .bubble { max-width: 82%; padding: 11px 15px; border-radius: 20px; white-space: pre-wrap; word-wrap: break-word; }
 .bubble.user { align-self: flex-end; background: var(--grad); color: #fff; border-bottom-right-radius: 6px; }
@@ -128,7 +129,7 @@ onMounted(load)
 .typing i:nth-child(3) { animation-delay: .4s; }
 @keyframes blink { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
 .disclaimer { text-align: center; margin-top: auto; padding-top: 12px; font-size: .75rem; }
-.disclaimer a { color: #C2577E; font-weight: 700; }
+.disclaimer a { color: var(--rose-ink); font-weight: 700; }
 .composer { padding: 10px 16px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); background: var(--bg); }
 .composer textarea { min-height: 46px; max-height: 120px; border-radius: 23px; padding: 11px 16px; }
 .send {

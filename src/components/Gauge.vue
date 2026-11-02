@@ -28,11 +28,11 @@ const label = computed(() => {
     <svg viewBox="0 0 180 180" width="180" height="180">
       <defs>
         <linearGradient id="gauge-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#F7A8C0" />
-          <stop offset="1" stop-color="#B39DEB" />
+          <stop offset="0" stop-color="#F3B9F2" />
+          <stop offset="1" stop-color="#C966CC" />
         </linearGradient>
       </defs>
-      <circle cx="90" cy="90" :r="R" fill="none" stroke="#F7E9EE" stroke-width="16" />
+      <circle cx="90" cy="90" :r="R" fill="none" stroke="#F6E6F6" stroke-width="16" />
       <circle
         cx="90" cy="90" :r="R" fill="none" stroke="url(#gauge-grad)" stroke-width="16" stroke-linecap="round"
         :stroke-dasharray="C" :stroke-dashoffset="offset" transform="rotate(-90 90 90)"

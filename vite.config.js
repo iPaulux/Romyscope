@@ -11,7 +11,7 @@ export default defineConfig({
       filename: 'sw.js',
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'luna.png'],
       manifest: {
         name: 'Romyscope',
         short_name: 'Romyscope',
@@ -20,8 +20,8 @@ export default defineConfig({
         start_url: '/',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#FFF7F4',
-        theme_color: '#FFF7F4',
+        background_color: '#FCF7FD',
+        theme_color: '#FCF7FD',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },

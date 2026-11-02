@@ -196,7 +196,7 @@ onMounted(load)
   border: 0; background: transparent; border-radius: 14px; padding: 8px 0; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 1px; text-transform: capitalize;
 }
-.day.today strong { color: #D9668F; }
+.day.today strong { color: var(--rose-ink); }
 .day.on { background: var(--grad); color: #fff; }
 .day.on strong { color: #fff; }
 .dots { display: flex; gap: 2px; height: 6px; }

@@ -66,6 +66,16 @@ npx netlify dev
 - Offre gratuite de Gemini : Google peut réutiliser les conversations pour améliorer ses produits. La fonction n'envoie donc que les messages du chat (ni prénom, ni objectif, ni données de suivi).
 - Luna (le chat) a des consignes strictes : pas de régime restrictif, pas de compensation, et orientation vers un pro et les numéros d'écoute (09 69 325 900, 3114) si besoin.
 
+## Visuels
+
+Les originaux de Luna sont dans `assets-src/`. Pour régénérer le favicon, les icônes d'appli et `public/luna.png` après les avoir modifiés :
+
+```bash
+npm run icons
+```
+
+(nécessite `rsvg-convert` : `brew install librsvg`)
+
 ## Structure
 
 ```

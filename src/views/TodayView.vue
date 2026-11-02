@@ -190,7 +190,7 @@ onMounted(() => {
 .glass { background: none; border: 0; padding: 4px; color: #8EB8DE; cursor: pointer; }
 .glass .water { fill: transparent; transition: fill .25s; }
 .glass.full .water { fill: #8EC5F2; }
-.link { color: #C2577E; text-decoration: none; font-weight: 700; }
+.link { color: var(--rose-ink); text-decoration: none; font-weight: 700; }
 .activity { cursor: pointer; }
 .grow { flex: 1; display: flex; flex-direction: column; }
 .done { text-decoration: line-through; color: var(--muted); }

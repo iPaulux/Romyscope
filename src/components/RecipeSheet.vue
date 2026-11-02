@@ -74,7 +74,7 @@ watch(
 <template>
   <BottomSheet :open="open" :title="idea?.name || ''" @close="emit('close')">
     <div v-if="loading" class="state">
-      <div class="cook">👩‍🍳</div>
+      <img class="cook" src="/luna.png" alt="" width="84" height="83" />
       <p class="muted">Luna prépare la recette…</p>
     </div>
 
@@ -121,7 +121,7 @@ watch(
 
 <style scoped>
 .state { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px 0; text-align: center; }
-.cook { font-size: 3rem; animation: bob 1.2s ease-in-out infinite; }
+.cook { animation: bob 1.2s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(-6px) rotate(-6deg); } }
 .meta { flex-wrap: wrap; gap: 8px; }
 .pill { background: var(--peach-soft); color: #B4643C; font-weight: 700; font-size: .85rem; padding: 6px 12px; border-radius: 999px; }
