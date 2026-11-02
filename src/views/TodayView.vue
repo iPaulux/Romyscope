@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { supabase } from '../lib/supabase'
+import { callFunction } from '../lib/api'
 import { store, settingsReady } from '../lib/store'
 import { isRestDay, previewWeek } from '../data/program'
 import { isoDay, addDays, startOfWeek, formatLong, greeting } from '../lib/date'
@@ -36,11 +37,29 @@ async function load() {
     supabase.from('activities').select('*').eq('day', day.value).order('time', { nullsFirst: false })
   ])
   meals.value = m.data || []
+  fillMissingKcal()
   glasses.value = w.data?.glasses || 0
   // Hors ligne : on montre quand même les séances prévues par le programme
   activities.value = a.error
     ? store.settings?.program_enabled ? previewWeek(startOfWeek(day.value), today).filter((x) => x.day === day.value) : []
     : a.data
+}
+
+// Repas enregistrés sans calories (ex : estimation en échec) : on les ré-estime en arrière-plan
+// pour que la jauge avance. Une seule tentative par repas et par session.
+const triedEstimates = new Set()
+async function fillMissingKcal() {
+  for (const meal of meals.value.filter((x) => x.kcal == null && !triedEstimates.has(x.id))) {
+    triedEstimates.add(meal.id)
+    try {
+      const { kcal } = await callFunction('chat', { mode: 'estimate', text: meal.name })
+      if (!kcal) continue
+      await supabase.from('meals').update({ kcal }).eq('id', meal.id)
+      meal.kcal = kcal
+    } catch {
+      // Hors ligne ou Luna indisponible : on réessaiera à la prochaine ouverture
+    }
+  }
 }
 
 async function loadNote() {

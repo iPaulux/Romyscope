@@ -59,7 +59,7 @@ async function save() {
   if (!form.value.name.trim()) return toast('Dis-moi ce que tu as mangé 🍽️')
   saving.value = true
   // En mode doux, on estime en silence pour que la jauge avance sans montrer de chiffre
-  if (form.value.kcal == null && props.meal?.name !== form.value.name) {
+  if (form.value.kcal == null) {
     form.value.kcal = await estimate()
   }
   const row = {
