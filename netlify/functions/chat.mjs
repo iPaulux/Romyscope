@@ -20,13 +20,14 @@ const BUDGET_MS = 8500
 const ATTEMPT_MS = 4000
 
 // Essaie chaque modèle tant qu'il reste du temps ; passe au suivant s'il est surchargé ou indisponible
-async function generate({ contents, config }) {
+async function generate({ contents, config, preferred }) {
+  const models = [...new Set([preferred, ...MODELS].filter(Boolean))]
   const deadline = Date.now() + BUDGET_MS
   let lastError
-  for (const [i, model] of MODELS.entries()) {
+  for (const [i, model] of models.entries()) {
     const remaining = deadline - Date.now()
     if (remaining < 1000) break
-    const isLast = i === MODELS.length - 1
+    const isLast = i === models.length - 1
     try {
       const timeout = isLast ? remaining : Math.min(remaining, ATTEMPT_MS)
       return await ai.models.generateContent({ model, contents, config: { ...config, abortSignal: AbortSignal.timeout(timeout) } })
@@ -86,6 +87,43 @@ async function estimate(text) {
   return kcal > 0 && kcal < 5000 ? kcal : null
 }
 
+// Recette pour 1 personne à partir du nom d'une idée repas (seul le nom du plat est envoyé)
+async function recipe(name, kcal) {
+  const response = await generate({
+    // Modèle plus soigné (moins de fautes) : la recette n'est générée qu'une fois puis gardée sur le téléphone
+    preferred: 'gemini-3.6-flash',
+    contents: `Recette : ${name.slice(0, 120)}${kcal ? ` (portion d'environ ${Math.round(kcal)} kcal)` : ''}`,
+    config: {
+      systemInstruction: `Tu écris des recettes simples et gourmandes pour une personne, en français, avec des ingrédients faciles à trouver en supermarché en France.
+Quantités précises (grammes, ml, cuillères, pièces) pour UNE portion. 3 à 7 étapes courtes et claires, à la deuxième personne du singulier.
+Ne mentionne jamais les calories, le poids ou le mot "régime". L'astuce est une petite idée bienveillante (variante, conservation, ou geste plaisir).`,
+      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+      responseMimeType: 'application/json',
+      responseJsonSchema: {
+        type: 'object',
+        properties: {
+          prep_minutes: { type: 'integer' },
+          cook_minutes: { type: 'integer' },
+          ingredients: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: { item: { type: 'string' }, quantity: { type: 'string' } },
+              required: ['item', 'quantity']
+            }
+          },
+          steps: { type: 'array', items: { type: 'string' } },
+          tip: { type: 'string' }
+        },
+        required: ['prep_minutes', 'cook_minutes', 'ingredients', 'steps', 'tip']
+      }
+    }
+  })
+  const data = JSON.parse(response.text || 'null')
+  if (!data?.ingredients?.length || !data?.steps?.length) throw new Error('Recette incomplète')
+  return data
+}
+
 async function chat(messages) {
   const history = messages
     .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
@@ -124,6 +162,9 @@ export default async (req) => {
   try {
     if (body.mode === 'estimate') {
       return json({ kcal: await estimate(String(body.text || '')) })
+    }
+    if (body.mode === 'recipe') {
+      return json({ recipe: await recipe(String(body.name || ''), Number(body.kcal) || null) })
     }
     return json({ reply: await chat(body.messages || []) })
   } catch (err) {

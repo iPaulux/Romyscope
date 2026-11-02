@@ -5,11 +5,14 @@ import { IDEAS, SLOTS, defaultSlot } from '../data/meals'
 import { store } from '../lib/store'
 import { isoDay } from '../lib/date'
 import MealSheet from '../components/MealSheet.vue'
+import RecipeSheet from '../components/RecipeSheet.vue'
 
 const router = useRouter()
 const slot = ref(defaultSlot() === 'extra' ? 'snack' : defaultSlot())
 const sheetOpen = ref(false)
 const prefill = ref(null)
+const recipeIdea = ref(null)
+const recipeOpen = ref(false)
 
 const PER_DAY = 6
 const reroll = ref(0)
@@ -36,7 +39,14 @@ const ideas = computed(() => {
 })
 const slots = SLOTS.filter((s) => s.id !== 'extra')
 
+function openRecipe(idea) {
+  recipeIdea.value = idea
+  recipeOpen.value = true
+}
+
+// Depuis la recette : noter le repas une fois cuisiné
 function eat(idea) {
+  recipeOpen.value = false
   prefill.value = { slot: idea.slot, name: idea.name, kcal: idea.kcal }
   sheetOpen.value = true
 }
@@ -68,14 +78,14 @@ function askLuna() {
     </div>
 
     <div class="grid">
-      <article v-for="idea in ideas" :key="idea.name" class="card idea">
+      <article v-for="idea in ideas" :key="idea.name" class="card idea" @click="openRecipe(idea)">
         <div class="emoji-bubble big">{{ idea.emoji }}</div>
         <h3>{{ idea.name }}</h3>
         <div class="row tags">
           <span v-for="t in idea.tags" :key="t" class="tag">{{ t }}</span>
           <span v-if="store.settings?.show_numbers" class="tag kcal">~{{ idea.kcal }} kcal</span>
         </div>
-        <button class="btn ghost sm" @click="eat(idea)">Je mange ça</button>
+        <button class="btn ghost sm">Voir la recette 📖</button>
       </article>
     </div>
 
@@ -85,13 +95,14 @@ function askLuna() {
       <button class="btn sm" @click="askLuna">Demander une idée ✨</button>
     </section>
 
+    <RecipeSheet :open="recipeOpen" :idea="recipeIdea" @close="recipeOpen = false" @cooked="eat" />
     <MealSheet :open="sheetOpen" :day="isoDay()" :meal="prefill" @close="sheetOpen = false" />
   </main>
 </template>
 
 <style scoped>
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-.idea { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
+.idea { cursor: pointer; display: flex; flex-direction: column; gap: 10px; padding: 14px; }
 .idea h3 { font-size: .98rem; flex: 1; }
 .big { width: 48px; height: 48px; font-size: 1.6rem; }
 .tags { flex-wrap: wrap; gap: 6px; }
