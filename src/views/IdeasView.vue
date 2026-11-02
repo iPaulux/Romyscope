@@ -78,7 +78,11 @@ function askLuna() {
     </div>
 
     <div class="grid">
-      <article v-for="idea in ideas" :key="idea.name" class="card idea" @click="openRecipe(idea)">
+      <!-- La clé change avec « D'autres idées » : les cartes se rejouent en cascade -->
+      <article
+        v-for="(idea, i) in ideas" :key="`${idea.name}-${reroll}`" class="card idea"
+        :style="{ animationDelay: `${i * 45}ms` }" @click="openRecipe(idea)"
+      >
         <div class="emoji-bubble big">{{ idea.emoji }}</div>
         <h3>{{ idea.name }}</h3>
         <div class="row tags">
@@ -102,6 +106,8 @@ function askLuna() {
 
 <style scoped>
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.idea { animation: rise .4s cubic-bezier(.3, .8, .3, 1) both; }
+.idea:active { transform: scale(.97); }
 .idea { cursor: pointer; display: flex; flex-direction: column; gap: 10px; padding: 14px; }
 .idea h3 { font-size: .98rem; flex: 1; }
 .big { width: 48px; height: 48px; font-size: 1.6rem; }

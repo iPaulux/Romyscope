@@ -181,6 +181,7 @@ onMounted(() => {
 .add { margin-top: 16px; }
 .slot + .slot { margin-top: 10px; }
 .slot-title { font-weight: 700; margin-bottom: 4px; }
+.meal { animation: rise .35s ease both; }
 .meal {
   width: 100%; display: flex; align-items: center; gap: 8px; text-align: left;
   background: var(--bg); border: 0; border-radius: 14px; padding: 11px 14px; margin-bottom: 6px; cursor: pointer;
@@ -190,9 +191,13 @@ onMounted(() => {
 .glass { background: none; border: 0; padding: 4px; color: #8EB8DE; cursor: pointer; }
 .glass .water { fill: transparent; transition: fill .25s; }
 .glass.full .water { fill: #8EC5F2; }
+.glass.full svg { animation: pop .35s ease; }
+.glass:active svg { transform: scale(.9); }
 .link { color: var(--rose-ink); text-decoration: none; font-weight: 700; }
 .activity { cursor: pointer; }
 .grow { flex: 1; display: flex; flex-direction: column; }
 .done { text-decoration: line-through; color: var(--muted); }
 .check { width: 24px; height: 24px; accent-color: var(--rose); }
+.check:checked { animation: pop .3s ease; }
+.done { transition: color .2s; }
 </style>

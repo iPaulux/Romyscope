@@ -118,8 +118,11 @@ onMounted(load)
 .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .welcome { text-align: center; padding: 24px 12px; display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .mascot { animation: float 4s ease-in-out infinite; }
-@keyframes float { 50% { transform: translateY(-8px); } }
 .welcome .title { font-size: 1.2rem; }
+.bubble { animation: bubble-in .32s cubic-bezier(.3, .8, .3, 1) both; }
+.bubble.user { transform-origin: bottom right; }
+.bubble.assistant { transform-origin: bottom left; }
+@keyframes bubble-in { from { opacity: 0; transform: translateY(8px) scale(.92); } to { opacity: 1; transform: none; } }
 .bubble { max-width: 82%; padding: 11px 15px; border-radius: 20px; white-space: pre-wrap; word-wrap: break-word; }
 .bubble.user { align-self: flex-end; background: var(--grad); color: #fff; border-bottom-right-radius: 6px; }
 .bubble.assistant { align-self: flex-start; background: #fff; box-shadow: var(--shadow); border-bottom-left-radius: 6px; }

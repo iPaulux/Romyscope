@@ -13,8 +13,35 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
     <title>Romyscope</title>
+    <style>
+      /* Splash : affiché tout de suite, retiré par main.js une fois l'appli prête */
+      #splash {
+        position: fixed; inset: 0; z-index: 1000;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+        background: radial-gradient(circle at 50% 38%, #FFFFFF 0%, #FCF7FD 45%, #F6E3F7 100%);
+        transition: opacity .5s ease, visibility .5s;
+      }
+      #splash.hide { opacity: 0; visibility: hidden; }
+      #splash img { width: 132px; height: auto; animation: splash-float 2.4s ease-in-out infinite; }
+      #splash .shadow { width: 76px; height: 12px; margin-top: -14px; border-radius: 50%; background: rgba(194, 95, 198, .18); animation: splash-shadow 2.4s ease-in-out infinite; }
+      #splash h1 {
+        margin: 6px 0 0; font: 600 1.9rem 'Fredoka', 'Nunito', system-ui, sans-serif; color: #4A3A48;
+        opacity: 0; animation: splash-in .6s .25s ease forwards;
+      }
+      #splash p { margin: 0; font: 400 1rem 'Nunito', system-ui, sans-serif; color: #988598; opacity: 0; animation: splash-in .6s .45s ease forwards; }
+      @keyframes splash-float { 50% { transform: translateY(-12px) scale(1.02, .98); } }
+      @keyframes splash-shadow { 50% { transform: scale(.75); opacity: .6; } }
+      @keyframes splash-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+      @media (prefers-reduced-motion: reduce) { #splash * { animation: none !important; opacity: 1 !important; } }
+    </style>
   </head>
   <body>
+    <div id="splash" aria-hidden="true">
+      <img src="/luna.png" alt="" width="132" height="131" />
+      <div class="shadow"></div>
+      <h1>Romyscope</h1>
+      <p>Ton petit coin de douceur 🌷</p>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

@@ -139,3 +139,41 @@ textarea.input { resize: none; min-height: 80px; }
 @keyframes pop { from { opacity: 0; transform: translate(-50%, 10px); } }
 .fade-enter-active, .fade-leave-active { transition: opacity .2s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* --- Animations --- */
+
+/* Changement de page : fondu + léger glissement */
+.page-enter-active { transition: opacity .28s ease, transform .28s cubic-bezier(.3, .8, .3, 1); }
+.page-leave-active { transition: opacity .15s ease; }
+.page-enter-from { opacity: 0; transform: translateY(10px); }
+.page-leave-to { opacity: 0; }
+
+/* Les blocs d'une page arrivent les uns après les autres */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.page > * { animation: rise .45s cubic-bezier(.3, .8, .3, 1) both; }
+.page > *:nth-child(2) { animation-delay: .05s; }
+.page > *:nth-child(3) { animation-delay: .1s; }
+.page > *:nth-child(4) { animation-delay: .15s; }
+.page > *:nth-child(5) { animation-delay: .2s; }
+.page > *:nth-child(6) { animation-delay: .25s; }
+.page > *:nth-child(n + 7) { animation-delay: .3s; }
+
+/* Petits effets réutilisables */
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 35% { transform: translateY(-5px); } 65% { transform: translateY(1px); } }
+@keyframes float { 50% { transform: translateY(-8px); } }
+
+.chip { transition: all .15s, transform .12s; }
+.chip:active { transform: scale(.95); }
+.chip.on { animation: pop .3s ease; }
+.card { transition: transform .15s ease; }
+
+/* Respecte le réglage « Réduire les animations » du téléphone */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: .01ms !important;
+  }
+}

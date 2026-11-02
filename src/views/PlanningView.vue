@@ -192,6 +192,8 @@ onMounted(load)
 .week { padding: 12px 8px; }
 .small-btn { width: 30px; height: 30px; flex: none; background: transparent; }
 .days { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.day { transition: background .2s, transform .15s; }
+.day:active { transform: scale(.92); }
 .day {
   border: 0; background: transparent; border-radius: 14px; padding: 8px 0; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 1px; text-transform: capitalize;
@@ -208,6 +210,8 @@ onMounted(load)
 .grow { flex: 1; display: flex; flex-direction: column; cursor: pointer; }
 .done { text-decoration: line-through; color: var(--muted); }
 .check { width: 24px; height: 24px; accent-color: var(--rose); }
+.check:checked { animation: pop .3s ease; }
+.list-item { animation: rise .35s ease both; }
 .add { margin-top: 12px; }
 .presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .preset {

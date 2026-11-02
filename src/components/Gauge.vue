@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
   value: { type: Number, default: 0 },
@@ -21,6 +21,22 @@ const label = computed(() => {
   if (r < 0.95) return { emoji: '💗', text: 'Presque complète' }
   return { emoji: '🫶', text: 'Journée bien nourrie' }
 })
+
+// Petite pluie de cœurs quand la jauge se remplit (seulement au moment où elle se remplit)
+const celebrate = ref(false)
+const HEARTS = [
+  { x: -70, y: -60, d: 0 }, { x: 70, y: -55, d: 0.08 }, { x: -40, y: -95, d: 0.16 },
+  { x: 45, y: -100, d: 0.04 }, { x: 0, y: -115, d: 0.12 }, { x: -85, y: -20, d: 0.2 }, { x: 85, y: -15, d: 0.1 }
+]
+watch(
+  () => props.value / props.target >= 0.95,
+  (full, wasFull) => {
+    if (full && wasFull === false) {
+      celebrate.value = true
+      setTimeout(() => (celebrate.value = false), 1800)
+    }
+  }
+)
 </script>
 
 <template>
@@ -45,10 +61,13 @@ const label = computed(() => {
         <div class="muted small">/ {{ target }} kcal</div>
       </template>
       <template v-else>
-        <div class="emoji">{{ label.emoji }}</div>
+        <div :key="label.emoji" class="emoji">{{ label.emoji }}</div>
       </template>
     </div>
-    <p class="label title">{{ label.text }}</p>
+    <div v-if="celebrate" class="hearts" aria-hidden="true">
+      <span v-for="(h, i) in HEARTS" :key="i" :style="{ '--x': `${h.x}px`, '--y': `${h.y}px`, animationDelay: `${h.d}s` }">💗</span>
+    </div>
+    <p :key="label.text" class="label title">{{ label.text }}</p>
   </div>
 </template>
 
@@ -56,6 +75,16 @@ const label = computed(() => {
 .gauge { position: relative; display: flex; flex-direction: column; align-items: center; }
 .center { position: absolute; top: 0; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .big { font-family: 'Fredoka', sans-serif; font-size: 2.2rem; font-weight: 600; line-height: 1; }
-.emoji { font-size: 3rem; }
-.label { margin-top: 6px; font-size: 1.1rem; }
+.emoji { font-size: 3rem; animation: pop .45s ease; }
+.label { margin-top: 6px; font-size: 1.1rem; animation: rise .4s ease both; }
+.hearts { position: absolute; top: 90px; left: 50%; pointer-events: none; }
+.hearts span {
+  position: absolute; font-size: 1.3rem; opacity: 0;
+  animation: heart-fly 1.4s ease-out forwards;
+}
+@keyframes heart-fly {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1.1); }
+}
 </style>

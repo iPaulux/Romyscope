@@ -38,5 +38,7 @@ const tabs = [
   transition: color .15s;
 }
 .tab.active { color: var(--rose-ink); }
-.tab.active svg { transform: translateY(-1px); }
+.tab svg { transition: transform .2s; }
+.tab:active svg { transform: scale(.88); }
+.tab.active svg { animation: bounce .45s ease; }
 </style>

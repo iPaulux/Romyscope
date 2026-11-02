@@ -51,7 +51,6 @@ async function login() {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center;
 }
 .logo img { animation: float 4s ease-in-out infinite; }
-@keyframes float { 50% { transform: translateY(-8px); } }
 h1 { margin-top: 12px; font-size: 2rem; }
 .form { width: 100%; margin-top: 20px; text-align: left; }
 .err { color: var(--rose-ink); }

@@ -140,7 +140,12 @@ watch(
 .grow { flex: 1; }
 .qty { color: var(--muted); font-weight: 700; font-size: .92rem; white-space: nowrap; }
 .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.steps li { display: flex; gap: 12px; }
+.steps li { display: flex; gap: 12px; animation: rise .4s ease both; }
+.steps li:nth-child(2) { animation-delay: .06s; }
+.steps li:nth-child(3) { animation-delay: .12s; }
+.steps li:nth-child(4) { animation-delay: .18s; }
+.steps li:nth-child(n + 5) { animation-delay: .24s; }
+.done .box { animation: pop .3s ease; }
 .num {
   width: 26px; height: 26px; flex: none; border-radius: 50%; background: var(--grad); color: #fff;
   display: grid; place-items: center; font-weight: 700; font-size: .85rem;
