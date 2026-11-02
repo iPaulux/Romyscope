@@ -1,9 +1,11 @@
-import { GoogleGenAI, ApiError } from '@google/genai'
+import { GoogleGenAI, ApiError, ThinkingLevel } from '@google/genai'
 import { getUser, json } from '../lib/supabase.mjs'
 import { env } from '../lib/env.mjs'
 
 const ai = new GoogleGenAI({ apiKey: env('GEMINI_API_KEY') })
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash'
+// Netlify coupe les fonctions à 10 s : on abandonne avant pour renvoyer un message propre
+const TIMEOUT_MS = 8500
 
 // Offre gratuite de Gemini : Google peut réutiliser les conversations.
 // On n'envoie donc que les messages du chat : ni prénom, ni objectif, ni données de suivi.
@@ -37,6 +39,8 @@ async function estimate(text) {
     contents: text.slice(0, 500),
     config: {
       systemInstruction: 'Tu estimes les calories totales d\'un repas décrit en français, en supposant des portions normales pour une femme adulte. Réponds uniquement avec le JSON demandé.',
+      thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+      abortSignal: AbortSignal.timeout(TIMEOUT_MS),
       responseMimeType: 'application/json',
       responseJsonSchema: {
         type: 'object',
@@ -69,7 +73,13 @@ async function chat(messages) {
   const response = await ai.models.generateContent({
     model: MODEL,
     contents: history,
-    config: { systemInstruction: SYSTEM }
+    config: {
+      systemInstruction: SYSTEM,
+      // Réflexion courte : une réponse de confidente n'a pas besoin de longue réflexion, et ça tient dans le délai
+      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+      maxOutputTokens: 2048,
+      abortSignal: AbortSignal.timeout(TIMEOUT_MS)
+    }
   })
   // Réponse vide = bloquée par les filtres de sécurité de Gemini
   return response.text?.trim() || FALLBACK_REPLY
@@ -87,6 +97,10 @@ export default async (req) => {
     }
     return json({ reply: await chat(body.messages || []) })
   } catch (err) {
+    if (err?.name === 'AbortError' || err?.name === 'TimeoutError') {
+      console.error('Gemini : délai dépassé')
+      return json({ error: 'Luna réfléchit trop longtemps, réessaie dans un instant 🌙' }, 504)
+    }
     if (err instanceof ApiError && err.status === 429) {
       return json({ error: 'Luna reprend son souffle, réessaie dans une minute 🌙' }, 429)
     }
