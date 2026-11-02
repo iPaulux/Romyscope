@@ -85,7 +85,8 @@ export default async (req) => {
     }
     if (err instanceof ApiError) {
       console.error('Gemini', err.status, err.message)
-      return json({ error: 'Luna est indisponible pour le moment 🥺' }, 502)
+      // Le code d'erreur (sans détail sensible) aide à diagnostiquer : 400/403 = clé, 404 = modèle
+      return json({ error: `Luna est indisponible pour le moment 🥺 (erreur ${err.status})` }, 502)
     }
     console.error(err)
     return json({ error: 'Oups, petit souci 🥺' }, 500)
