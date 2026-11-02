@@ -1,8 +1,18 @@
 # Romyscope 🌷
 
-Une PWA mobile-first toute douce, pensée pour accompagner une personne qui vit avec un TCA : journal des repas (mode doux, sans chiffres par défaut), hydratation, planning d'activités à la maison, idées repas, notifications de courage et de rappel, mots doux de Paul, et Luna, une confidente propulsée par Gemini.
+Une PWA mobile-first toute douce, pensée pour accompagner une personne qui vit avec un TCA, avec Luna, une petite confidente propulsée par Gemini. Pensée pour un budget étudiant : **0 € par mois** (offres gratuites de Netlify, Supabase et Gemini).
 
 **Stack :** Vue 3 + Vite, vite-plugin-pwa, Supabase (auth + BDD), Netlify (hébergement + fonctions), API Gemini, Web Push.
+
+## Fonctionnalités
+
+- **Aujourd'hui** : jauge douce sans chiffres, journal des repas (faim avant, ressenti après), hydratation, activités du jour, mot doux ou encouragement.
+- **Idées repas** : 60 idées petit budget, 6 par repas renouvelées chaque jour, bouton « D'autres idées ». Chaque idée ouvre une **recette** pour 1 personne (ingrédients à cocher, étapes, temps, coût estimé), générée une fois par Gemini puis gardée sur le téléphone.
+- **Planning** : programme sport à la maison pré-rempli chaque semaine (3 Just Dance, 2 Pilates, 1 yoga ou stretching, dimanche repos), qui varie d'une semaine à l'autre et se met en pause depuis **Moi**.
+- **Luna** : chat bienveillant, consignes adaptées aux TCA et au petit budget.
+- **Notifications** : rappels de repas, d'eau, de séance, mots de courage et mots doux du soir.
+- **Mots doux** : page réservée à l'admin pour écrire des messages qui s'affichent sur l'accueil et arrivent en notification.
+- **Hors ligne** : l'appli s'ouvre sans réseau et montre un aperçu du planning.
 
 ---
 
@@ -14,57 +24,83 @@ Une PWA mobile-first toute douce, pensée pour accompagner une personne qui vit 
 4. **Authentication → Users → Add user** : crée son compte (email + mot de passe, coche « Auto confirm »). Crée aussi le tien si tu veux écrire des mots doux.
 5. **Project Settings → API** : récupère `Project URL`, la clé `anon` et la clé `service_role`.
 
+> Offre gratuite : Supabase met le projet en pause après une semaine sans aucune visite. Avec une utilisation quotidienne, ça n'arrive pas.
+
 ## 2. Variables d'environnement
 
-Copie `.env.example` en `.env` pour le local (un `.env` avec des clés VAPID déjà générées existe). Les clés VAPID (notifications) se génèrent avec :
+Copie `.env.example` en `.env` pour le local (jamais commité). Les clés VAPID (notifications) se génèrent avec :
 
 ```bash
 npm run vapid
 ```
 
-Sur **Netlify → Site configuration → Environment variables**, ajoute toutes les variables de `.env.example`.
+Sur **Netlify → Project configuration → Environment variables**, ajoute toutes les variables de `.env.example`, en choisissant « Same value for all deploy contexts ».
 
-Scopes à choisir :
-- Clés secrètes (`GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `VAPID_PRIVATE_KEY`) : cocher « Contains secret values », scope **Functions** uniquement.
-- `VITE_SUPABASE_URL` et `VITE_VAPID_PUBLIC_KEY` : scopes **Builds et Functions**, car les fonctions les lisent aussi.
-- Autres `VITE_*` : scope **Builds** (elles sont intégrées au site, c'est normal qu'elles soient publiques).
+| Variable | Où la trouver | Scope Netlify |
+|---|---|---|
+| `VITE_SUPABASE_URL` | Supabase → API | Builds + Functions |
+| `VITE_SUPABASE_ANON_KEY` | Supabase → API | Builds |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → API (⚠️ secrète) | Functions, secrète |
+| `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (commence par `AQ.` ou `AIza`) | Functions, secrète |
+| `GEMINI_MODEL` | optionnel : modèle essayé en premier | Functions |
+| `VITE_VAPID_PUBLIC_KEY` | `npm run vapid` | Builds + Functions |
+| `VAPID_PRIVATE_KEY` | `npm run vapid` (⚠️ secrète) | Functions, secrète |
+| `VAPID_SUBJECT` | `mailto:ton@email` | Functions |
+| `VITE_ADMIN_EMAIL` | ton email (débloque l'écriture des mots doux) | Builds |
 
-| Variable | Où la trouver |
-|---|---|
-| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Supabase → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → API (⚠️ secrète, jamais côté front) |
-| `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey), offre gratuite |
-| `GEMINI_MODEL` | optionnel : modèle essayé en premier. Par défaut `gemini-3.5-flash-lite`, puis `gemini-3.6-flash` et `gemini-3.1-flash-lite` si un modèle est surchargé |
-| `VITE_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | `npm run vapid` |
-| `VAPID_SUBJECT` | `mailto:ton@email` |
-| `VITE_ADMIN_EMAIL` | ton email (débloque l'écriture des mots doux) |
+Les `VITE_*` sont intégrées au site : c'est normal qu'elles soient publiques. Après une modification de variable, relance un deploy (**Deploys → Trigger deploy**).
 
 ## 3. Netlify
 
-Pousse le repo sur GitHub puis **Add new site → Import from Git**. Le fichier `netlify.toml` configure tout (build, fonctions, redirection SPA). La fonction `reminders` tourne automatiquement toutes les 15 minutes.
+Pousse le repo sur GitHub puis **Add new site → Import from Git**. Le fichier `netlify.toml` configure tout : build, fonctions, redirection SPA et Node 22 (requis par supabase-js côté serveur). La fonction `reminders` tourne toute seule toutes les 15 minutes.
 
-En local avec les fonctions :
+Pour enlever le badge « Powered by Netlify » qui passe sur la barre de navigation : **Project configuration → General → Powered by Netlify badge**.
+
+En local :
 
 ```bash
-npx netlify dev
+npm run dev
 ```
 
-(`npm run dev` suffit pour l'interface, mais le chat et les notifs ont besoin des fonctions.)
+`npm run dev` suffit pour l'interface. Le chat, les recettes et les notifications passent par les fonctions : `npx netlify dev` (Node 22 requis).
 
 ## 4. Sur son téléphone
 
 - **iPhone** : ouvrir le site dans Safari → Partager → « Sur l'écran d'accueil ». Les notifications ne marchent que depuis l'appli installée (iOS 16.4+).
 - **Android** : Chrome propose l'installation automatiquement.
-- Puis onglet **Moi** → renseigner le prénom (il n'est stocké que dans ta base, jamais dans le code) → activer les notifications → « Envoyer une notif test ».
+- Puis onglet **Moi** → renseigner le prénom (stocké uniquement dans la base, jamais dans le code) → activer les notifications → « Envoyer une notif test ».
+
+---
 
 ## Choix liés aux TCA
 
-- Jauge sans chiffres par défaut, chiffres activables dans **Moi**.
+- Jauge sans chiffres par défaut, chiffres activables dans **Moi**. En mode doux, l'objectif chiffré est aussi masqué.
 - Objectif minimum bloqué à 1400 kcal (contrainte en base et dans l'interface).
-- En mode doux, les calories sont estimées par Gemini en silence : elle écrit juste ce qu'elle a mangé.
+- Les calories sont estimées par Gemini en silence : elle écrit juste ce qu'elle a mangé. Un repas enregistré sans estimation (panne) est ré-estimé à la prochaine ouverture.
 - Aucun message négatif, même au-delà de l'objectif. Si elle se sent coupable ou stressée, l'appli répond avec douceur.
-- Offre gratuite de Gemini : Google peut réutiliser les conversations pour améliorer ses produits. La fonction n'envoie donc que les messages du chat (ni prénom, ni objectif, ni données de suivi).
-- Luna (le chat) a des consignes strictes : pas de régime restrictif, pas de compensation, et orientation vers un pro et les numéros d'écoute (09 69 325 900, 3114) si besoin.
+- Luna a des consignes strictes : pas de régime restrictif, pas de compensation, pas de chiffres, et orientation vers un pro et les numéros d'écoute (09 69 325 900, 3114) si besoin.
+- Pas de suivi du poids, volontairement.
+
+## Vie privée
+
+- Offre gratuite de Gemini : Google peut réutiliser les contenus envoyés. Les fonctions n'envoient donc que les messages du chat, le nom du plat (recettes) ou la description du repas (estimation). Jamais de prénom, d'objectif ni de données de suivi.
+- Le repo est public : aucune clé, aucun email, aucun prénom dans le code. Netlify bloque le build si la valeur d'une variable d'environnement apparaît dans un fichier.
+
+## Luna et Gemini
+
+Les modèles gratuits sont parfois surchargés. La fonction `chat` essaie donc plusieurs modèles dans l'ordre (`gemini-3.5-flash-lite`, puis `gemini-3.6-flash`, puis `gemini-3.1-flash-lite`), 4 s maximum chacun, sans les nouvelles tentatives automatiques du SDK, pour toujours répondre avant la limite de 10 s des fonctions Netlify. Les recettes commencent par `gemini-3.6-flash`, plus soigné.
+
+## Dépannage
+
+| Symptôme | Cause probable |
+|---|---|
+| « Luna est indisponible : la clé Gemini est invalide » | Clé mal copiée ou pas dans le contexte Production sur Netlify. Recolle-la puis relance un deploy. |
+| « Luna est indisponible (erreur 404) » | Modèle retiré : mets à jour la liste `MODELS` dans `netlify/functions/chat.mjs`. |
+| « Luna réfléchit trop longtemps » / « reprend son souffle » | Gemini surchargé ou quota gratuit atteint, réessayer un peu plus tard. |
+| Erreur dans une fonction | Netlify → **Logs & metrics → Functions** → `chat`. Une variable manquante y est indiquée en clair. |
+| Build bloqué par le scan de secrets | Une valeur de variable se retrouve dans un fichier du repo (souvent une valeur d'exemple). |
+| Pas de demande de notification sur iPhone | Ouvrir l'appli depuis l'écran d'accueil, ou autoriser dans Réglages → Notifications → Romyscope. |
+| Ancienne icône sur iPhone | Supprimer l'appli de l'écran d'accueil et la rajouter depuis Safari. |
 
 ## Visuels
 
@@ -81,12 +117,14 @@ npm run icons
 ```
 src/
   views/        Écrans (Today, Ideas, Planning, Chat, Settings, LoveNotes, Login)
-  components/   Gauge, MealSheet, BottomSheet, BottomNav
-  lib/          Supabase, store, push, dates, appels API
-  data/         Idées repas, activités, messages d'encouragement
+  components/   Gauge, MealSheet, RecipeSheet, BottomSheet, BottomNav
+  lib/          Supabase, store, push, dates, appels API, toasts
+  data/         Idées repas, programme sport, activités, encouragements
   sw.js         Service worker (cache hors ligne + notifications)
 netlify/
-  functions/    chat (Gemini), reminders (planifiée), push-test
-  lib/          Code partagé des fonctions
+  functions/    chat (Luna, estimation, recettes), reminders (planifiée), push-test
+  lib/          Code partagé des fonctions (Supabase, push, variables)
 supabase/schema.sql
+assets-src/     Originaux de Luna
+scripts/        Génération des icônes
 ```
