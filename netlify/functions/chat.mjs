@@ -2,10 +2,44 @@ import { GoogleGenAI, ApiError, ThinkingLevel } from '@google/genai'
 import { getUser, json } from '../lib/supabase.mjs'
 import { env } from '../lib/env.mjs'
 
-const ai = new GoogleGenAI({ apiKey: env('GEMINI_API_KEY') })
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash'
+// Pas de nouvelles tentatives automatiques : sur un modèle surchargé (503), le SDK
+// réessayait jusqu'à dépasser les 10 s de Netlify. On passe plutôt au modèle suivant.
+const ai = new GoogleGenAI({ apiKey: env('GEMINI_API_KEY'), httpOptions: { retryOptions: { attempts: 1 } } })
+
+// Modèles gratuits essayés dans l'ordre (mesurés le 2026-11-02 : 1,8 s, 4 s et 2,4 s)
+const MODELS = [
+  process.env.GEMINI_MODEL,
+  'gemini-3.5-flash-lite',
+  'gemini-3.6-flash',
+  'gemini-3.1-flash-lite'
+].filter((m, i, list) => m && list.indexOf(m) === i)
+
 // Netlify coupe les fonctions à 10 s : on abandonne avant pour renvoyer un message propre
-const TIMEOUT_MS = 8500
+const BUDGET_MS = 8500
+// Un modèle surchargé peut aussi rester muet : on lui laisse 4 s max pour garder du temps au suivant
+const ATTEMPT_MS = 4000
+
+// Essaie chaque modèle tant qu'il reste du temps ; passe au suivant s'il est surchargé ou indisponible
+async function generate({ contents, config }) {
+  const deadline = Date.now() + BUDGET_MS
+  let lastError
+  for (const [i, model] of MODELS.entries()) {
+    const remaining = deadline - Date.now()
+    if (remaining < 1000) break
+    const isLast = i === MODELS.length - 1
+    try {
+      const timeout = isLast ? remaining : Math.min(remaining, ATTEMPT_MS)
+      return await ai.models.generateContent({ model, contents, config: { ...config, abortSignal: AbortSignal.timeout(timeout) } })
+    } catch (err) {
+      lastError = err
+      const timedOut = err?.name === 'AbortError' || err?.name === 'TimeoutError'
+      const retryable = timedOut || (err instanceof ApiError && [404, 429, 500, 503].includes(err.status))
+      if (!retryable) throw err
+      console.warn(`Gemini ${model} indisponible (${timedOut ? 'trop lent' : err.status}), modèle suivant`)
+    }
+  }
+  throw lastError ?? Object.assign(new Error('Délai dépassé'), { name: 'TimeoutError' })
+}
 
 // Offre gratuite de Gemini : Google peut réutiliser les conversations.
 // On n'envoie donc que les messages du chat : ni prénom, ni objectif, ni données de suivi.
@@ -34,13 +68,11 @@ const FALLBACK_REPLY = 'Je n\'arrive pas à répondre à ça, mais je suis là �
 
 // Estimation rapide des calories d'un repas décrit en texte libre
 async function estimate(text) {
-  const response = await ai.models.generateContent({
-    model: MODEL,
+  const response = await generate({
     contents: text.slice(0, 500),
     config: {
       systemInstruction: 'Tu estimes les calories totales d\'un repas décrit en français, en supposant des portions normales pour une femme adulte. Réponds uniquement avec le JSON demandé.',
-      thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-      abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, // MINIMAL n'est pas accepté par tous les modèles
       responseMimeType: 'application/json',
       responseJsonSchema: {
         type: 'object',
@@ -70,15 +102,13 @@ async function chat(messages) {
   while (history.length && history[0].role !== 'user') history.shift()
   if (!history.length) throw new Error('Message vide')
 
-  const response = await ai.models.generateContent({
-    model: MODEL,
+  const response = await generate({
     contents: history,
     config: {
       systemInstruction: SYSTEM,
       // Réflexion courte : une réponse de confidente n'a pas besoin de longue réflexion, et ça tient dans le délai
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-      maxOutputTokens: 2048,
-      abortSignal: AbortSignal.timeout(TIMEOUT_MS)
+      maxOutputTokens: 2048
     }
   })
   // Réponse vide = bloquée par les filtres de sécurité de Gemini
@@ -101,7 +131,7 @@ export default async (req) => {
       console.error('Gemini : délai dépassé')
       return json({ error: 'Luna réfléchit trop longtemps, réessaie dans un instant 🌙' }, 504)
     }
-    if (err instanceof ApiError && err.status === 429) {
+    if (err instanceof ApiError && (err.status === 429 || err.status === 503)) {
       return json({ error: 'Luna reprend son souffle, réessaie dans une minute 🌙' }, 429)
     }
     if (err instanceof ApiError && err.message.includes('API_KEY_INVALID')) {

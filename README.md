@@ -34,7 +34,7 @@ Scopes à choisir :
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Supabase → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → API (⚠️ secrète, jamais côté front) |
 | `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey), offre gratuite |
-| `GEMINI_MODEL` | optionnel, `gemini-3.8-flash` par défaut |
+| `GEMINI_MODEL` | optionnel : modèle essayé en premier. Par défaut `gemini-3.5-flash-lite`, puis `gemini-3.6-flash` et `gemini-3.1-flash-lite` si un modèle est surchargé |
 | `VITE_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | `npm run vapid` |
 | `VAPID_SUBJECT` | `mailto:ton@email` |
 | `VITE_ADMIN_EMAIL` | ton email (débloque l'écriture des mots doux) |
