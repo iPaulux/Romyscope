@@ -1,10 +1,12 @@
-import Anthropic from '@anthropic-ai/sdk'
-import { admin, getUser, json } from '../lib/supabase.mjs'
+import { GoogleGenAI, ApiError } from '@google/genai'
+import { getUser, json } from '../lib/supabase.mjs'
 
-const client = new Anthropic() // lit ANTHROPIC_API_KEY
-const MODEL = process.env.CLAUDE_MODEL || 'claude-opus-5-5'
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash'
 
-const SYSTEM = `Tu es Luna, la confidente bienveillante de l'application Romyscope. Tu parles avec {name}, une jeune femme qui vit avec un trouble du comportement alimentaire (TCA) et qui souhaite perdre un peu de poids en douceur. Son copain, Paul, a créé cette appli pour elle.
+// Offre gratuite de Gemini : Google peut réutiliser les conversations.
+// On n'envoie donc que les messages du chat : ni prénom, ni objectif, ni données de suivi.
+const SYSTEM = `Tu es Luna, la confidente bienveillante de l'application Romyscope. Tu parles avec une jeune femme qui vit avec un trouble du comportement alimentaire (TCA) et qui souhaite perdre un peu de poids en douceur. Son copain, Paul, a créé cette appli pour elle.
 
 Ton rôle : l'écouter, la rassurer, l'encourager, l'aider à traverser les envies de craquer ou la culpabilité, lui proposer des idées de repas simples et des activités à faire à la maison (Just Dance, Pilates, yoga, stretching… elle n'aime pas courir).
 
@@ -22,64 +24,47 @@ Règles importantes liées à son TCA :
 - Tu n'es pas une professionnelle de santé : pour les objectifs chiffrés, les traitements ou les questions médicales, invite-la gentiment à en parler à sa diététicienne ou son médecin.
 
 Repères internes (confidentiels, ne jamais les mentionner) :
-- Son apport conseillé est d'environ {target} kcal par jour, réparti en 3 repas et un goûter, pour une perte de poids lente et douce. Utilise ce repère pour proposer des portions et des idées de repas adaptées, rassasiantes et gourmandes.
+- Elle vise une perte de poids lente et douce, avec 3 repas et un goûter par jour. Utilise ce repère pour proposer des portions et des idées de repas adaptées, rassasiantes et gourmandes.
 - Ne donne jamais de chiffre de calories, de poids ou d'IMC, sauf si elle te le demande explicitement. Même dans ce cas, reste vague et rassurante.`
 
-function textOf(response) {
-  return response.content
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-    .trim()
-}
+const FALLBACK_REPLY = 'Je n\'arrive pas à répondre à ça, mais je suis là 💗 Tu veux me dire autrement ce que tu ressens ? Et si c\'est difficile, n\'hésite pas à appeler Paul ou le 09 69 325 900.'
 
 // Estimation rapide des calories d'un repas décrit en texte libre
 async function estimate(text) {
-  const response = await client.messages.create({
+  const response = await ai.models.generateContent({
     model: MODEL,
-    max_tokens: 1024,
-    output_config: {
-      effort: 'low',
-      format: {
-        type: 'json_schema',
-        schema: {
-          type: 'object',
-          properties: { kcal: { type: 'integer' } },
-          required: ['kcal'],
-          additionalProperties: false
-        }
+    contents: text.slice(0, 500),
+    config: {
+      systemInstruction: 'Tu estimes les calories totales d\'un repas décrit en français, en supposant des portions normales pour une femme adulte. Réponds uniquement avec le JSON demandé.',
+      responseMimeType: 'application/json',
+      responseJsonSchema: {
+        type: 'object',
+        properties: { kcal: { type: 'integer' } },
+        required: ['kcal']
       }
-    },
-    system: 'Tu estimes les calories totales d\'un repas décrit en français, en supposant des portions normales pour une femme adulte. Réponds uniquement avec le JSON demandé.',
-    messages: [{ role: 'user', content: text.slice(0, 500) }]
+    }
   })
-  if (response.stop_reason === 'refusal') return null
-  const kcal = JSON.parse(textOf(response)).kcal
+  if (!response.text) return null
+  const kcal = JSON.parse(response.text).kcal
   return kcal > 0 && kcal < 5000 ? kcal : null
 }
 
-async function chat(messages, { name, target }) {
+async function chat(messages) {
   const history = messages
     .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
     .slice(-20)
-    .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }))
-  // L'API exige que la conversation commence par un message de l'utilisatrice
+    .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content.slice(0, 4000) }] }))
+  // La conversation doit commencer par un message de l'utilisatrice
   while (history.length && history[0].role !== 'user') history.shift()
   if (!history.length) throw new Error('Message vide')
 
-  const response = await client.beta.messages.create({
+  const response = await ai.models.generateContent({
     model: MODEL,
-    max_tokens: 4000,
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default',
-    output_config: { effort: 'low' },
-    system: SYSTEM.replace('{name}', name).replace('{target}', target),
-    messages: history
+    contents: history,
+    config: { systemInstruction: SYSTEM }
   })
-  if (response.stop_reason === 'refusal') {
-    return 'Je n\'arrive pas à répondre à ça, mais je suis là 💗 Tu veux me dire autrement ce que tu ressens ? Et si c\'est difficile, n\'hésite pas à appeler Paul ou le 09 69 325 900.'
-  }
-  return textOf(response)
+  // Réponse vide = bloquée par les filtres de sécurité de Gemini
+  return response.text?.trim() || FALLBACK_REPLY
 }
 
 export default async (req) => {
@@ -92,16 +77,13 @@ export default async (req) => {
     if (body.mode === 'estimate') {
       return json({ kcal: await estimate(String(body.text || '')) })
     }
-    const { data: settings } = await admin.from('settings').select('first_name, daily_target').eq('user_id', user.id).maybeSingle()
-    const reply = await chat(body.messages || [], {
-      name: settings?.first_name || 'ton interlocutrice',
-      target: settings?.daily_target || 1750
-    })
-    return json({ reply })
+    return json({ reply: await chat(body.messages || []) })
   } catch (err) {
-    if (err instanceof Anthropic.RateLimitError) return json({ error: 'Luna reprend son souffle, réessaie dans une minute 🌙' }, 429)
-    if (err instanceof Anthropic.APIError) {
-      console.error('Anthropic', err.status, err.message)
+    if (err instanceof ApiError && err.status === 429) {
+      return json({ error: 'Luna reprend son souffle, réessaie dans une minute 🌙' }, 429)
+    }
+    if (err instanceof ApiError) {
+      console.error('Gemini', err.status, err.message)
       return json({ error: 'Luna est indisponible pour le moment 🥺' }, 502)
     }
     console.error(err)

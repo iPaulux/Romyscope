@@ -1,8 +1,8 @@
 # Romyscope 🌷
 
-Une PWA mobile-first toute douce, pensée pour accompagner une personne qui vit avec un TCA : journal des repas (mode doux, sans chiffres par défaut), hydratation, planning d'activités à la maison, idées repas, notifications de courage et de rappel, mots doux de Paul, et Luna, une confidente propulsée par Claude.
+Une PWA mobile-first toute douce, pensée pour accompagner une personne qui vit avec un TCA : journal des repas (mode doux, sans chiffres par défaut), hydratation, planning d'activités à la maison, idées repas, notifications de courage et de rappel, mots doux de Paul, et Luna, une confidente propulsée par Gemini.
 
-**Stack :** Vue 3 + Vite, vite-plugin-pwa, Supabase (auth + BDD), Netlify (hébergement + fonctions), API Claude, Web Push.
+**Stack :** Vue 3 + Vite, vite-plugin-pwa, Supabase (auth + BDD), Netlify (hébergement + fonctions), API Gemini, Web Push.
 
 ---
 
@@ -28,8 +28,8 @@ Sur **Netlify → Site configuration → Environment variables**, ajoute toutes 
 |---|---|
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Supabase → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → API (⚠️ secrète, jamais côté front) |
-| `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) |
-| `CLAUDE_MODEL` | optionnel, `claude-opus-5-5` par défaut |
+| `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey), offre gratuite |
+| `GEMINI_MODEL` | optionnel, `gemini-3.8-flash` par défaut |
 | `VITE_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | `npm run vapid` |
 | `VAPID_SUBJECT` | `mailto:ton@email` |
 | `VITE_ADMIN_EMAIL` | ton email (débloque l'écriture des mots doux) |
@@ -56,8 +56,9 @@ npx netlify dev
 
 - Jauge sans chiffres par défaut, chiffres activables dans **Moi**.
 - Objectif minimum bloqué à 1400 kcal (contrainte en base et dans l'interface).
-- En mode doux, les calories sont estimées par Claude en silence : elle écrit juste ce qu'elle a mangé.
+- En mode doux, les calories sont estimées par Gemini en silence : elle écrit juste ce qu'elle a mangé.
 - Aucun message négatif, même au-delà de l'objectif. Si elle se sent coupable ou stressée, l'appli répond avec douceur.
+- Offre gratuite de Gemini : Google peut réutiliser les conversations pour améliorer ses produits. La fonction n'envoie donc que les messages du chat (ni prénom, ni objectif, ni données de suivi).
 - Luna (le chat) a des consignes strictes : pas de régime restrictif, pas de compensation, et orientation vers un pro et les numéros d'écoute (09 69 325 900, 3114) si besoin.
 
 ## Structure
@@ -70,7 +71,7 @@ src/
   data/         Idées repas, activités, messages d'encouragement
   sw.js         Service worker (cache hors ligne + notifications)
 netlify/
-  functions/    chat (Claude), reminders (planifiée), push-test
+  functions/    chat (Gemini), reminders (planifiée), push-test
   lib/          Code partagé des fonctions
 supabase/schema.sql
 ```

@@ -19,7 +19,7 @@ function eat(idea) {
   sheetOpen.value = true
 }
 
-function askClaude() {
+function askLuna() {
   const label = SLOTS.find((s) => s.id === slot.value).label.toLowerCase()
   router.push({ path: '/chat', query: { q: `Tu peux me proposer une idée de ${label} simple, gourmande et équilibrée avec ce que j'ai probablement dans mes placards ?` } })
 }
@@ -55,7 +55,7 @@ function askClaude() {
     <section class="card soft-lilac ask">
       <p><strong>Pas inspirée ?</strong></p>
       <p class="small muted">Demande une idée sur mesure à ton assistante.</p>
-      <button class="btn sm" @click="askClaude">Demander une idée ✨</button>
+      <button class="btn sm" @click="askLuna">Demander une idée ✨</button>
     </section>
 
     <MealSheet :open="sheetOpen" :day="isoDay()" :meal="prefill" @close="sheetOpen = false" />
