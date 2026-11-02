@@ -55,6 +55,13 @@ async function chat(messages) {
     .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
     .slice(-20)
     .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content.slice(0, 4000) }] }))
+    // Fusionne les messages consécutifs du même rôle (ex : un envoi précédent qui a échoué)
+    .reduce((acc, m) => {
+      const last = acc[acc.length - 1]
+      if (last?.role === m.role) last.parts.push(...m.parts)
+      else acc.push(m)
+      return acc
+    }, [])
   // La conversation doit commencer par un message de l'utilisatrice
   while (history.length && history[0].role !== 'user') history.shift()
   if (!history.length) throw new Error('Message vide')
@@ -82,6 +89,10 @@ export default async (req) => {
   } catch (err) {
     if (err instanceof ApiError && err.status === 429) {
       return json({ error: 'Luna reprend son souffle, réessaie dans une minute 🌙' }, 429)
+    }
+    if (err instanceof ApiError && err.message.includes('API_KEY_INVALID')) {
+      console.error('Gemini : clé API invalide')
+      return json({ error: 'Luna est indisponible : la clé Gemini est invalide (à vérifier sur Netlify) 🥺' }, 502)
     }
     if (err instanceof ApiError) {
       console.error('Gemini', err.status, err.message)
