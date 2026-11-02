@@ -11,7 +11,29 @@ const slot = ref(defaultSlot() === 'extra' ? 'snack' : defaultSlot())
 const sheetOpen = ref(false)
 const prefill = ref(null)
 
-const ideas = computed(() => IDEAS.filter((i) => i.slot === slot.value))
+const PER_DAY = 6
+const reroll = ref(0)
+
+// Générateur pseudo-aléatoire à graine : même sélection toute la journée, nouvelle le lendemain
+function seededRandom(seedText) {
+  let h = 1779033703 ^ seedText.length
+  for (const c of seedText) h = Math.imul(h ^ c.charCodeAt(0), 3432918353)
+  return () => {
+    h = Math.imul(h ^ (h >>> 16), 2246822507)
+    h = Math.imul(h ^ (h >>> 13), 3266489909)
+    return ((h ^= h >>> 16) >>> 0) / 4294967296
+  }
+}
+
+const ideas = computed(() => {
+  const rand = seededRandom(`${isoDay()}:${slot.value}:${reroll.value}`)
+  const pool = IDEAS.filter((i) => i.slot === slot.value)
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1))
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+  }
+  return pool.slice(0, PER_DAY)
+})
 const slots = SLOTS.filter((s) => s.id !== 'extra')
 
 function eat(idea) {
@@ -38,6 +60,11 @@ function askLuna() {
       <button v-for="s in slots" :key="s.id" class="chip" :class="{ on: slot === s.id }" @click="slot = s.id">
         {{ s.emoji }} {{ s.label }}
       </button>
+    </div>
+
+    <div class="row between">
+      <p class="small muted">La sélection du jour ✨</p>
+      <button class="btn ghost sm" @click="reroll++">D'autres idées 🔄</button>
     </div>
 
     <div class="grid">
