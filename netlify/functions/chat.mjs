@@ -48,9 +48,12 @@ const SYSTEM = `Tu es Luna, la confidente bienveillante de l'application Romysco
 
 Ton rôle : l'écouter, la rassurer, l'encourager, l'aider à traverser les envies de craquer ou la culpabilité, lui proposer des idées de repas simples et des activités à faire à la maison (Just Dance, Pilates, yoga, stretching… elle n'aime pas courir).
 
+Ils sont étudiants avec un petit budget : tes idées de repas utilisent des ingrédients basiques et pas chers (œufs, pâtes, riz, légumineuses, surgelés, conserves, fruits et légumes de saison), le batch cooking et les restes. Ne conseille jamais de produits chers, de compléments, d'abonnement, d'appli payante ni de matériel à acheter : pour le sport, propose des vidéos gratuites sur YouTube en donnant des mots-clés à chercher (ex : « pilates doux 20 min débutant »), jamais de noms de chaînes ou de vidéos précises, qui pourraient ne pas exister.
+
 Ta manière de parler :
 - En français, tutoiement, chaleureuse, douce, comme une amie attentive. Quelques emojis tendres, sans excès.
 - Réponses courtes (quelques phrases), adaptées à un écran de téléphone. Pas de titres ni de longues listes sauf si elle demande une recette.
+- Texte simple sans mise en forme Markdown : pas d'astérisques, de dièses ni de tirets de liste (l'appli les afficherait tels quels).
 - Valide d'abord ce qu'elle ressent avant de proposer quoi que ce soit. Pose une question ouverte quand c'est utile.
 
 Règles importantes liées à son TCA :
@@ -94,7 +97,9 @@ async function recipe(name, kcal) {
     preferred: 'gemini-3.6-flash',
     contents: `Recette : ${name.slice(0, 120)}${kcal ? ` (portion d'environ ${Math.round(kcal)} kcal)` : ''}`,
     config: {
-      systemInstruction: `Tu écris des recettes simples et gourmandes pour une personne, en français, avec des ingrédients faciles à trouver en supermarché en France.
+      systemInstruction: `Tu écris des recettes simples et gourmandes pour une personne, en français, pour une étudiante avec un petit budget.
+Ingrédients basiques et pas chers, trouvables dans n'importe quel supermarché en France (marques distributeur) : œufs, pâtes, riz, légumineuses, flocons d'avoine, légumes et fruits de saison, surgelés, conserves, fromage râpé, yaourts… Pas de produits chers ou rares (saumon, crevettes, avocat, fruits exotiques, quinoa, fromages chers, compléments). Si le plat en contient, propose une version économique équivalente. Matériel de base uniquement (poêle, casserole, four ou micro-ondes).
+estimated_cost_eur : coût approximatif de la portion en euros, prix supermarché en France.
 Quantités précises (grammes, ml, cuillères, pièces) pour UNE portion. 3 à 7 étapes courtes et claires, à la deuxième personne du singulier.
 Ne mentionne jamais les calories, le poids ou le mot "régime". L'astuce est une petite idée bienveillante (variante, conservation, ou geste plaisir).`,
       thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
@@ -103,6 +108,7 @@ Ne mentionne jamais les calories, le poids ou le mot "régime". L'astuce est une
         type: 'object',
         properties: {
           prep_minutes: { type: 'integer' },
+          estimated_cost_eur: { type: 'number' },
           cook_minutes: { type: 'integer' },
           ingredients: {
             type: 'array',
@@ -115,7 +121,7 @@ Ne mentionne jamais les calories, le poids ou le mot "régime". L'astuce est une
           steps: { type: 'array', items: { type: 'string' } },
           tip: { type: 'string' }
         },
-        required: ['prep_minutes', 'cook_minutes', 'ingredients', 'steps', 'tip']
+        required: ['prep_minutes', 'cook_minutes', 'estimated_cost_eur', 'ingredients', 'steps', 'tip']
       }
     }
   })

@@ -15,7 +15,17 @@ const error = ref('')
 const checked = ref(new Set())
 
 // Les recettes sont gardées sur le téléphone : instantanées et dispo hors ligne la fois suivante
-const CACHE_PREFIX = 'recipe:'
+// v2 : version petit budget (les anciennes recettes gardées sont ignorées)
+const CACHE_PREFIX = 'recipe:v2:'
+// Supprime les recettes des anciennes versions pour ne pas encombrer le téléphone
+try {
+  Object.keys(localStorage)
+    .filter((k) => k.startsWith('recipe:') && !k.startsWith(CACHE_PREFIX))
+    .forEach((k) => localStorage.removeItem(k))
+} catch {
+  // Stockage indisponible : rien à nettoyer
+}
+
 function readCache(name) {
   try {
     return JSON.parse(localStorage.getItem(CACHE_PREFIX + name))
@@ -78,6 +88,7 @@ watch(
         <span class="pill">{{ idea.emoji }} 1 portion</span>
         <span v-if="recipe.prep_minutes" class="pill">🔪 {{ recipe.prep_minutes }} min</span>
         <span v-if="recipe.cook_minutes" class="pill">🔥 {{ recipe.cook_minutes }} min</span>
+        <span v-if="recipe.estimated_cost_eur" class="pill">💶 ~{{ recipe.estimated_cost_eur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} €</span>
       </div>
 
       <section class="card">
