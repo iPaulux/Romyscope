@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { supabase } from '../lib/supabase'
-import { callFunction } from '../lib/api'
+import { callLuna } from '../lib/api'
 import { store, settingsReady } from '../lib/store'
 import { isRestDay, previewWeek } from '../data/program'
 import { isoDay, addDays, startOfWeek, formatLong, greeting } from '../lib/date'
@@ -52,7 +52,7 @@ async function fillMissingKcal() {
   for (const meal of meals.value.filter((x) => x.kcal == null && !triedEstimates.has(x.id))) {
     triedEstimates.add(meal.id)
     try {
-      const { kcal } = await callFunction('chat', { mode: 'estimate', text: meal.name })
+      const { kcal } = await callLuna({ mode: 'estimate', text: meal.name })
       if (!kcal) continue
       await supabase.from('meals').update({ kcal }).eq('id', meal.id)
       meal.kcal = kcal

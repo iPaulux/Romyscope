@@ -42,7 +42,6 @@ Sur **Netlify → Project configuration → Environment variables**, ajoute tout
 | `VITE_SUPABASE_ANON_KEY` | Supabase → API | Builds |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → API (⚠️ secrète) | Functions, secrète |
 | `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (commence par `AQ.` ou `AIza`) | Functions, secrète |
-| `GEMINI_MODEL` | optionnel : modèle essayé en premier | Functions |
 | `VITE_VAPID_PUBLIC_KEY` | `npm run vapid` | Builds + Functions |
 | `VAPID_PRIVATE_KEY` | `npm run vapid` (⚠️ secrète) | Functions, secrète |
 | `VAPID_SUBJECT` | `mailto:ton@email` | Functions |
@@ -52,7 +51,7 @@ Les `VITE_*` sont intégrées au site : c'est normal qu'elles soient publiques. 
 
 ## 3. Netlify
 
-Pousse le repo sur GitHub puis **Add new site → Import from Git**. Le fichier `netlify.toml` configure tout : build, fonctions, redirection SPA et Node 22 (requis par supabase-js côté serveur). La fonction `reminders` tourne toute seule toutes les 15 minutes.
+Pousse le repo sur GitHub puis **Add new site → Import from Git**. Le fichier `netlify.toml` configure tout : build, fonctions, redirection SPA et Node 22 (requis par supabase-js côté serveur). La fonction `reminders` tourne toute seule toutes les 15 minutes, et l'Edge Function `luna` répond sur `/api/luna`.
 
 Pour enlever le badge « Powered by Netlify » qui passe sur la barre de navigation : **Project configuration → General → Powered by Netlify badge**.
 
@@ -62,7 +61,7 @@ En local :
 npm run dev
 ```
 
-`npm run dev` suffit pour l'interface. Le chat, les recettes et les notifications passent par les fonctions : `npx netlify dev` (Node 22 requis).
+`npm run dev` suffit pour l'interface. Luna (chat, estimation, recettes) et les notifications passent par les fonctions : `npx netlify dev` (Node 22 requis).
 
 ## 4. Sur son téléphone
 
@@ -88,16 +87,22 @@ npm run dev
 
 ## Luna et Gemini
 
-Les modèles gratuits sont parfois surchargés. La fonction `chat` essaie donc plusieurs modèles dans l'ordre (`gemini-3.5-flash-lite`, puis `gemini-3.6-flash`, puis `gemini-3.1-flash-lite`), 4 s maximum chacun, sans les nouvelles tentatives automatiques du SDK, pour toujours répondre avant la limite de 10 s des fonctions Netlify. Les recettes commencent par `gemini-3.6-flash`, plus soigné.
+Luna tourne dans une **Edge Function** (`netlify/edge-functions/luna.js`) qui appelle l'API Gemini directement en HTTP. Contrairement aux fonctions classiques (coupées à 10 s), elle peut attendre jusqu'à 40 s, ce qui compte car les modèles gratuits sont souvent surchargés et leur vitesse change d'un jour à l'autre.
+
+- Le premier modèle est lancé, puis les suivants **en parallèle** s'il tarde plus de 1,5 s ou renvoie une erreur de surcharge (429, 503). La première réponse gagne, les autres sont annulées.
+- Si tous sont surchargés, nouveau tour après 2 s, jusqu'à 32 s au total.
+- Le chat est **diffusé au fur et à mesure** : le texte s'affiche dès les premiers mots. Après 6 s d'attente, l'appli prévient que Google est un peu chargé.
+- Modèles : `gemini-3.5-flash-lite`, `gemini-3.6-flash`, `gemini-3.1-flash-lite` (liste `MODELS` dans le fichier). Les recettes commencent par `gemini-3.6-flash`, plus soigné.
 
 ## Dépannage
 
 | Symptôme | Cause probable |
 |---|---|
 | « Luna est indisponible : la clé Gemini est invalide » | Clé mal copiée ou pas dans le contexte Production sur Netlify. Recolle-la puis relance un deploy. |
-| « Luna est indisponible (erreur 404) » | Modèle retiré : mets à jour la liste `MODELS` dans `netlify/functions/chat.mjs`. |
-| « Luna réfléchit trop longtemps » / « reprend son souffle » | Gemini surchargé ou quota gratuit atteint, réessayer un peu plus tard. |
-| Erreur dans une fonction | Netlify → **Logs & metrics → Functions** → `chat`. Une variable manquante y est indiquée en clair. |
+| « Luna est indisponible (erreur 404) » | Modèle retiré : mets à jour la liste `MODELS` dans `netlify/edge-functions/luna.js`. |
+| « Luna est très demandée en ce moment » | Gemini surchargé pendant plus de 30 s ou quota gratuit atteint, réessayer un peu plus tard. |
+| Erreur de Luna | Netlify → **Logs & metrics → Edge Functions** → `luna`. |
+| Erreur des notifications | Netlify → **Logs & metrics → Functions**. Une variable manquante y est indiquée en clair. |
 | Build bloqué par le scan de secrets | Une valeur de variable se retrouve dans un fichier du repo (souvent une valeur d'exemple). |
 | Pas de demande de notification sur iPhone | Ouvrir l'appli depuis l'écran d'accueil, ou autoriser dans Réglages → Notifications → Romyscope. |
 | Ancienne icône sur iPhone | Supprimer l'appli de l'écran d'accueil et la rajouter depuis Safari. |
@@ -122,7 +127,8 @@ src/
   data/         Idées repas, programme sport, activités, encouragements
   sw.js         Service worker (cache hors ligne + notifications)
 netlify/
-  functions/    chat (Luna, estimation, recettes), reminders (planifiée), push-test
+  edge-functions/  luna (chat en streaming, estimation, recettes)
+  functions/    reminders (planifiée), push-test
   lib/          Code partagé des fonctions (Supabase, push, variables)
 supabase/schema.sql
 assets-src/     Originaux de Luna

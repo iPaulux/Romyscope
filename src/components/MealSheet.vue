@@ -3,7 +3,7 @@ import { ref, watch, computed } from 'vue'
 import BottomSheet from './BottomSheet.vue'
 import { SLOTS, HUNGER, FEELINGS, FEELING_REPLIES, defaultSlot } from '../data/meals'
 import { supabase } from '../lib/supabase'
-import { callFunction } from '../lib/api'
+import { callLuna } from '../lib/api'
 import { store } from '../lib/store'
 import { toast } from '../lib/toast'
 
@@ -40,7 +40,7 @@ async function estimate() {
   if (!form.value.name.trim()) return null
   estimating.value = true
   try {
-    const { kcal } = await callFunction('chat', { mode: 'estimate', text: form.value.name })
+    const { kcal } = await callLuna({ mode: 'estimate', text: form.value.name })
     return kcal
   } catch {
     return null

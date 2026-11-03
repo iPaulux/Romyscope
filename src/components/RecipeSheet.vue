@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import BottomSheet from './BottomSheet.vue'
-import { callFunction } from '../lib/api'
+import { callLuna } from '../lib/api'
 
 const props = defineProps({
   open: Boolean,
@@ -49,7 +49,7 @@ async function load() {
   if (recipe.value) return
   loading.value = true
   try {
-    const data = await callFunction('chat', { mode: 'recipe', name, kcal })
+    const data = await callLuna({ mode: 'recipe', name, kcal })
     recipe.value = data.recipe
     writeCache(name, data.recipe)
   } catch (e) {

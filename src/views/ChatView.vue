@@ -2,14 +2,16 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from '../lib/supabase'
-import { callFunction } from '../lib/api'
+import { streamLuna } from '../lib/api'
 import { toast } from '../lib/toast'
 import { store } from '../lib/store'
 
 const route = useRoute()
 const messages = ref([])
 const input = ref(route.query.q || '')
-const sending = ref(false)
+const sending = ref(false) // en attente du premier mot de Luna
+const busy = ref(false) // de l'envoi jusqu'à la fin de la réponse
+const slow = ref(false)
 const scroller = ref(null)
 
 const suggestions = [
@@ -33,20 +35,33 @@ async function load() {
 
 async function send(text = input.value) {
   text = text.trim()
-  if (!text || sending.value) return
+  if (!text || busy.value) return
   input.value = ''
   messages.value.push({ role: 'user', content: text })
-  sending.value = true
+  sending.value = busy.value = true
+  slow.value = false
+  // Quand Google est surchargé, Luna peut mettre plusieurs secondes : on le dit gentiment
+  const slowTimer = setTimeout(() => (slow.value = true), 6000)
   scrollDown()
   supabase.from('chat_messages').insert({ role: 'user', content: text }).then()
+  let reply = null
   try {
-    const { reply } = await callFunction('chat', { messages: messages.value.slice(-20) })
-    messages.value.push({ role: 'assistant', content: reply })
-    await supabase.from('chat_messages').insert({ role: 'assistant', content: reply })
+    await streamLuna(messages.value.slice(-20), (chunk) => {
+      if (!reply) {
+        // Premier morceau : la bulle de Luna remplace les petits points
+        messages.value.push({ role: 'assistant', content: '' })
+        reply = messages.value[messages.value.length - 1]
+        sending.value = false
+      }
+      reply.content += chunk
+      scrollDown()
+    })
+    if (reply) await supabase.from('chat_messages').insert({ role: 'assistant', content: reply.content })
   } catch (e) {
     toast(e.message)
   } finally {
-    sending.value = false
+    clearTimeout(slowTimer)
+    sending.value = busy.value = false
     scrollDown()
   }
 }
@@ -86,6 +101,7 @@ onMounted(load)
       </div>
       <div v-for="(m, i) in messages" :key="i" class="bubble" :class="m.role">{{ m.content }}</div>
       <div v-if="sending" class="bubble assistant typing"><i /><i /><i /></div>
+      <p v-if="sending && slow" class="slow small muted">Luna réfléchit… Google est un peu chargé en ce moment, elle arrive 🌙</p>
       <p class="disclaimer small muted">
         Luna est une IA, pas une professionnelle de santé. Si ça ne va vraiment pas : appelle Paul, ton médecin,
         <a href="tel:0969325900">09 69 325 900</a> (Anorexie Boulimie Info Écoute) ou le <a href="tel:3114">3114</a> 24h/24.
@@ -93,12 +109,12 @@ onMounted(load)
     </div>
 
     <div class="composer">
-      <div v-if="!sending" class="chips scroll">
+      <div v-if="!busy" class="chips scroll">
         <button v-for="s in suggestions" :key="s" class="chip" @click="send(s)">{{ s }}</button>
       </div>
       <div class="row">
         <textarea v-model="input" class="input" rows="1" placeholder="Écris-moi…" @keydown="onKey" />
-        <button class="send" :disabled="sending || !input.trim()" aria-label="Envoyer" @click="send()">
+        <button class="send" :disabled="busy || !input.trim()" aria-label="Envoyer" @click="send()">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M3.4 20.4l17.4-7.5a1 1 0 0 0 0-1.8L3.4 3.6a.9.9 0 0 0-1.3 1L4 11l9 1-9 1-1.9 6.4a.9.9 0 0 0 1.3 1z" /></svg>
         </button>
       </div>
@@ -126,6 +142,7 @@ onMounted(load)
 .bubble { max-width: 82%; padding: 11px 15px; border-radius: 20px; white-space: pre-wrap; word-wrap: break-word; }
 .bubble.user { align-self: flex-end; background: var(--grad); color: #fff; border-bottom-right-radius: 6px; }
 .bubble.assistant { align-self: flex-start; background: #fff; box-shadow: var(--shadow); border-bottom-left-radius: 6px; }
+.slow { margin: -4px 0 0 4px; animation: rise .4s ease both; }
 .typing { display: flex; gap: 4px; padding: 15px 18px; }
 .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--lilac); animation: blink 1.2s infinite; }
 .typing i:nth-child(2) { animation-delay: .2s; }

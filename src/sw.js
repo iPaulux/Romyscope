@@ -6,7 +6,7 @@ self.skipWaiting()
 clientsClaim()
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
-registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [/^\/\.netlify\//] }))
+registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [/^\/\.netlify\//, /^\/api\//] }))
 
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {}
